@@ -22,6 +22,26 @@ EXPECTED_BYTES = 10
 OUTPUT_PATH = "/output/entry.txt"
 
 
+def verify(path, data) -> bool:
+    """Read the file back and check it byte-for-byte against what we wrote."""
+    with open(path, "rb") as f:
+        written = f.read()
+    if len(written) != EXPECTED_BYTES:
+        raise SystemExit(
+            f"verification failed: {path} is {len(written)} bytes, "
+            f"expected {EXPECTED_BYTES}"
+        )
+    digest = hashlib.sha256(written).hexdigest()
+    if digest != EXPECTED_SHA256:
+        raise SystemExit(
+            f"verification failed: {path} sha256 {digest}, "
+            f"expected {EXPECTED_SHA256}"
+        )
+    if written != data:
+        raise SystemExit(f"verification failed: {path} does not match the entry")
+    return True
+
+
 def main() -> int:
     data = WORD.encode("utf-8")
     if len(WORD.split()) != 1 or not WORD.strip():
@@ -43,6 +63,8 @@ def main() -> int:
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "wb") as f:
         f.write(data)
+    if not verify(OUTPUT_PATH, data):
+        raise SystemExit("verification failed: written file does not match")
     print(f"wrote {OUTPUT_PATH}: {WORD!r} ({len(data)} bytes, sha256 {digest[:12]}...)")
     return 0
 
